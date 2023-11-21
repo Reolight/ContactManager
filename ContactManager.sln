@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CantactManager", "CantactManager\CantactManager.csproj", "{6B6B7823-31D2-43FF-A01D-FF49F2AB74F6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ContactManager", "ContactManager\ContactManager.csproj", "{6B6B7823-31D2-43FF-A01D-FF49F2AB74F6}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "Core\Core.csproj", "{A615D4D4-0C59-4023-BE18-0A1F9690E3E2}"
 EndProject

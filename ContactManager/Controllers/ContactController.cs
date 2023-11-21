@@ -2,7 +2,7 @@
 using Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace CantactManager.Controllers;
+namespace ContactManager.Controllers;
 
 [ApiController, Route("[controller]")]
 public class ContactController : ControllerBase
