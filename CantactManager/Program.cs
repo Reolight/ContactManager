@@ -1,6 +1,15 @@
+using Application;
+using Infrastructure;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+
+if (builder.Configuration.GetConnectionString("DbContext") is not { } connectionString)
+    throw new InvalidOperationException("Connection string [DbContext] not found");
+builder.Services.AddInfrastructure(connectionString);
+builder.Services.AddApplicationServices();
 
 builder.Services.AddControllersWithViews();
 

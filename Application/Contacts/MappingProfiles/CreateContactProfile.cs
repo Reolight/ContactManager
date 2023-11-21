@@ -1,13 +1,14 @@
 ﻿using Application.Contacts.Dto;
 using Mapster;
+using Core;
 
 namespace Application.Contacts.MappingProfiles;
 
-public class ContactProfile : IRegister
+public class CreateContactProfile : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
-        config.NewConfig<ContactDto, Core.Contact>()
+        config.NewConfig<CreateContactDto, Contact>()
             .Map(contact => contact.BirthDate,
                 dto => DateOnly.Parse(dto.BirthDate));
     }

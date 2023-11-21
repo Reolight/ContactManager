@@ -1,4 +1,5 @@
-﻿using Application.Contacts.Dto;
+﻿using Application.Contacts;
+using Application.Contacts.Dto;
 using Core;
 using Infrastructure.Repositories.Interfaces;
 using Mapster;
@@ -11,13 +12,13 @@ public class ContactService : IContactService
 
     public ContactService(IRepositoryAsync<Contact> repository) => _repository = repository;
 
-    public async Task<ContactDto> AddContactAsync(ContactDto contactDto)
+    public async Task<ContactDto> AddContactAsync(CreateContactDto contactDto)
     {
         var contact = contactDto.Adapt<Contact>();
         return (await _repository.CreateAsync(contact)).Adapt<ContactDto>();
     }
 
-    public async Task UpdateContactAsync(Guid id, ContactDto contactDto)
+    public async Task UpdateContactAsync(Guid id, CreateContactDto contactDto)
     {
         var contact = contactDto.Adapt<Contact>();
         await _repository.UpdateAsync(contact);

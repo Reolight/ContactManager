@@ -1,8 +1,7 @@
-﻿namespace Application.Contacts;
+﻿namespace Application.Contacts.Dto;
 
-public class ContactDto
+public class CreateContactDto
 {
-    public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string JobTitle { get; set; } = string.Empty;
     public string BirthDate { get; set; } = string.Empty;
