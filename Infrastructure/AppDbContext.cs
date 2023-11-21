@@ -6,7 +6,11 @@ namespace Infrastructure;
 
 public class AppDbContext : DbContext
 {
-    public DbSet<Contact> Contacts { get; set; }
+    public DbSet<Contact> Contacts { get; set; } = null!;
+    
+    public AppDbContext() {}
+    public AppDbContext(DbContextOptions<AppDbContext> options)
+        : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
