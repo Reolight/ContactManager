@@ -1,26 +1,120 @@
-import React, { Component } from 'react';
+import React, {Component, useEffect, useState} from 'react';
+import {
+    Button,
+    Dialog, Stack,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    useMediaQuery
+} from "@mui/material";
+import {DeleteContact, GetContact} from "../helpers/backfetch";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import dayjs from "dayjs";
+import ContactEdit from "./ContactEdit";
+import PopupAlert from "./PopupAlert";
+import {produce} from "immer";
+import {Add} from "@mui/icons-material";
 
-export class Home extends Component {
-  static displayName = Home.name;
-
-  render() {
+export function Home(props){
+    const [state, setState] = useState({ contacts: [], dialogOpened: false });
+    const fullScreen = useMediaQuery(theme.breakpoint.down('md'));
+    
+    const [popups, setPopups] = useState({ notes: [] }); 
+        
+    function fetchData() {
+        GetContact().then(data =>
+            setState({ ...state, contacts: [...data] } ));
+    }
+    
+    useEffect(fetchData, [props]);
+    
+    function deleteAction(id){
+        DeleteContact.then(
+            isOk => {
+                if (isOk) addPopup(`Contact ${state.contacts.find(c => c.id === id).name} was deleted`, 'error');
+                else addPopup(`Contact WASN'T deleted`);
+            });
+        fetchData();
+    }
+    
     return (
-      <div>
-        <h1>Hello, world!</h1>
-        <p>Welcome to your new single-page application, built with:</p>
-        <ul>
-          <li><a href='https://get.asp.net/'>ASP.NET Core</a> and <a href='https://msdn.microsoft.com/en-us/library/67ef8sbd.aspx'>C#</a> for cross-platform server-side code</li>
-          <li><a href='https://facebook.github.io/react/'>React</a> for client-side code</li>
-          <li><a href='http://getbootstrap.com/'>Bootstrap</a> for layout and styling</li>
-        </ul>
-        <p>To help you get started, we have also set up:</p>
-        <ul>
-          <li><strong>Client-side navigation</strong>. For example, click <em>Counter</em> then <em>Back</em> to return here.</li>
-          <li><strong>Development server integration</strong>. In development mode, the development server from <code>create-react-app</code> runs in the background automatically, so your client-side resources are dynamically built on demand and the page refreshes when you modify any file.</li>
-          <li><strong>Efficient production builds</strong>. In production mode, development-time features are disabled, and your <code>dotnet publish</code> configuration produces minified, efficiently bundled JavaScript files.</li>
-        </ul>
-        <p>The <code>ClientApp</code> subdirectory is a standard React application based on the <code>create-react-app</code> template. If you open a command prompt in that directory, you can run <code>npm</code> commands such as <code>npm test</code> or <code>npm install</code>.</p>
+      <div>  
+        <TableContainer>
+            <Table>
+                <TableHead>
+                    <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell>Job title</TableCell>
+                        <TableCell>Birth date</TableCell>
+                        <TableCell>Mobile phone</TableCell>
+                        <TableCell>Actions</TableCell>
+                    </TableRow>
+                </TableHead>
+                <TableBody>
+                    {state.contacts.map(contact =>{
+                      return (<TableRow key={contact.id}>
+                          <TableCell component="th" scope="row">{contact.name}</TableCell>
+                          <TableCell component="th" scope="row">{contact.jobTitle}</TableCell>
+                          <TableCell component="th" scope="row">{dayjs(contact.birthDate).format("DDD.MM.YYYY")}</TableCell>
+                          <TableCell component="th" scope="row">
+                              {`+${contact.mobilePhone.slice(0, 2)}(${contact.mobilePhone.slice(3,4)}) ${contact.mobilePhone.slice(5, 7)}-${contact.mobilePhone.slice(8, 9)}-${contact.mobilePhone.slice(10,11)}`}
+                          </TableCell>
+                          <TableCell component="th" scope="row">
+                              <Stack direction={"row"} space={1.5} >
+                                  <Button onClick={() => setState({...state, dialogOpened: true, edit: contact })} 
+                                          disabled={state.dialogOpened}
+                                  >
+                                      <EditIcon/>
+                                  </Button>
+                                  <Button onClick={() => deleteAction(id)} disabled={state.dialogOpened}>
+                                      <DeleteIcon/>
+                                  </Button>
+                              </Stack>
+                          </TableCell>
+                      </TableRow>);
+                    }) }
+                </TableBody>
+            </Table>
+        </TableContainer>
+          <Stack direction={"row"} space={2} justifyContent={"center"}>
+              <Button variant={"contained"} disabled={state.dialogOpened} color={"primary"}
+                      onClick={() => setState({...state, dialogOpened: true})}
+              >
+                  Create
+              </Button>
+          </Stack>
+        <Dialog 
+            open={state.dialogOpened}
+            fullScreen={fullScreen}
+        >
+            <ContactEdit 
+                contact={edit in state? state.edit : undefined}
+                backHook={() => setState({...state, dialogOpened: false })}
+                savedHook={(message) => addPopup(message, 'success')}
+            />
+        </Dialog>
+
+          {popups.map(popup => <PopupAlert 
+              key={popup.key}
+              message={popup.message}
+              severuity={popup.severity}
+              deleteHook={deletePopup}
+          />)}
       </div>
     );
-  }
+    
+    function deletePopup(key) {
+        setPopups({ notes: popups.notes.filter(pp => pp.key !== key)})
+    }
+    
+    function addPopup(message, severity) {
+        setPopups(produce(draftState => {
+            draftState.notes.push({ key: Date.now(), message: message, severity: severity });
+            return draftState;
+        }))
+    }
 }
