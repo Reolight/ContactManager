@@ -5,7 +5,6 @@ import dayjs from "dayjs";
 import {produce} from "immer";
 import {maxLengthRule, minLengthRule} from "../helpers/rules";
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField} from "@mui/material";
-import DialogContext from "@mui/material/Dialog/DialogContext";
 import {IMaskInput} from "react-imask";
 import {DateField, LocalizationProvider} from "@mui/x-date-pickers";
 import {AdapterDayjs} from "@mui/x-date-pickers/AdapterDayjs";
@@ -62,13 +61,6 @@ export default function ContactEdit(props){
             } : {...props.contact, birthDate: dayjs(props.contact.birthDate, "DD.MM.YYYY") },
         errors: {}
     });
-    
-    useEffect(() => console.log(props));
-    useEffect(() => {
-        console.log(state)
-        console.log("contains empty fields: ", Object.keys(state.contact).every(key => state.contact[key]),
-            "contains errors: ", Object.keys(state.errors).length > 0)
-    }, [state.contact]);
     
     // onChange func
     function input(attributeName, value){
