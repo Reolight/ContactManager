@@ -9,6 +9,6 @@ public class ContactDtoProfile : IRegister
     {
         config.NewConfig<ContactDto, Contact>()
             .Map(contact => contact.BirthDate,
-                dto => DateOnly.Parse(dto.BirthDate));
+                dto => DateOnly.FromDateTime(DateTime.Parse(dto.BirthDate)));
     }
 }

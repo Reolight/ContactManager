@@ -20,8 +20,10 @@ public class ContactService : IContactService
 
     public async Task UpdateContactAsync(Guid id, CreateContactDto contactDto)
     {
-        var contact = contactDto.Adapt<Contact>();
-        await _repository.UpdateAsync(contact);
+        if ((await _repository.FindByConditionAsync(c => c.Id == id)).FirstOrDefault() is not { } updated)
+            return;
+        var contact = contactDto.Adapt(updated);
+            await _repository.UpdateAsync(contact);
     }
 
     public async Task RemoveContactAsync(Guid id)
