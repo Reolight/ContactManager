@@ -9,7 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 if (builder.Configuration.GetConnectionString("DbContext") is not { } connectionString)
     throw new InvalidOperationException("Connection string [DbContext] not found");
 builder.Services.AddInfrastructure(connectionString);
-builder.Services.AddApplicationServices();
+builder.Services
+    .AddApplicationServices()
+    .AddMappingProfiles();
 
 builder.Services.AddControllersWithViews();
 
