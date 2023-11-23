@@ -1,21 +1,23 @@
-﻿import {useEffect, useState} from "react";
+﻿import * as React from 'react';
+import {useEffect, useState} from 'react'
 import { PostContact, UpdateContact } from "../helpers/backfetch";
 import dayjs from "dayjs";
 import {produce} from "immer";
 import {maxLengthRule, minLengthRule} from "../helpers/rules";
-import {Button, DialogActions, DialogTitle, Stack, TextField} from "@mui/material";
+import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Stack, TextField} from "@mui/material";
 import DialogContext from "@mui/material/Dialog/DialogContext";
 import {IMaskInput} from "react-imask";
-import {DateField} from "@mui/x-date-pickers";
+import {DateField, LocalizationProvider} from "@mui/x-date-pickers";
+import {AdapterDayjs} from "@mui/x-date-pickers/AdapterDayjs";
 
 const contactRules = {
     name: {
         rules: [...maxLengthRule(32, "name"), ...minLengthRule(2, "name")],
     },
     mobilePhone: {
-        rules: [...maxLengthRule(12), ...minLengthRule(12),
+        rules: [...maxLengthRule(9), ...minLengthRule(9),
             {
-                check: (str) => /(?<=375)(17|29|33|44)/.test(str),
+                check: (str) => /^(17|29|33|44)/.test(str),
                 fail: "Unknown operator code (only 17, 29, 33 and 44 are available)"
             }],
     },
@@ -38,6 +40,7 @@ const MobilePhoneMask = React.forwardRef(function MobilePhoneMask(props, ref)
         <IMaskInput 
             {...other} 
             mask="+375(00) 000-00-00"
+            unmask={true}
             inputRef={ref}
             onAccept={value => onChange({target: {name: props.name, value }}) }
             overwrite
@@ -46,14 +49,26 @@ const MobilePhoneMask = React.forwardRef(function MobilePhoneMask(props, ref)
 });
 
 export default function ContactEdit(props){
-    const { savedHook } = props;
+    
     const [state, setState] = useState({
-        isLoading: true, 
-        isNew: props === undefined,
+        isNew: !props.contact,
         isPosting: false,
-        contact: undefined,
+        contact: !props.contact ?
+            {
+                name: "",
+                mobilePhone: "",
+                jobTitle: "",
+                birthDate: dayjs().subtract(16, "years")
+            } : {...props.contact, birthDate: dayjs(props.contact.birthDate, "DD.MM.YYYY") },
         errors: {}
     });
+    
+    useEffect(() => console.log(props));
+    useEffect(() => {
+        console.log(state)
+        console.log("contains empty fields: ", Object.keys(state.contact).every(key => state.contact[key]),
+            "contains errors: ", Object.keys(state.errors).length > 0)
+    }, [state.contact]);
     
     // onChange func
     function input(attributeName, value){
@@ -63,7 +78,7 @@ export default function ContactEdit(props){
             : value;
         // validation
         const error = contactRules[attributeName].rules.reduce((errs, rule) => {
-            if (rule.check(convertedValue))
+            if (!rule.check(convertedValue))
                 errs.push(rule.fail);
             return errs;
         }, []).join(", ");
@@ -73,7 +88,7 @@ export default function ContactEdit(props){
             draftState.contact[attributeName] = convertedValue;
             // dealing with errors
             if (error)
-                draftState.errors = {...error}
+                draftState.errors = { [attributeName]: error}
             else if ([attributeName] in draftState.errors)
                 delete draftState.errors[attributeName];
         }));
@@ -86,73 +101,75 @@ export default function ContactEdit(props){
     }
     
     useEffect(() => {
-        setState(produce(draftState => {
-            draftState.isLoading = false;
-            draftState.contact = props.contact === undefined ? 
-            {
-                name: "",
-                mobilePhone: "",
-                jobTitle: "",
-                birthDate: dayjs()
-            } : props.contact;
-            
-            return draftState;
-        }));
-    }, [props])
+        console.log("state.isPosting effect");
+        if (!state.isPosting)
+            return;
+        
+        const promise = state.isNew ? PostContact(state.contact) : UpdateContact(state.contact.id, state.contact)
+        promise.then(resp => {
+            if (resp.ok)
+                props.savedHook(`Contact "${state.contact.name}" ${state.isNew? "created" : "updated"}`);
+            else
+                props.savedHook(`Save failed. Code: ${resp.status}`, 'error');
+        });
+     
+        setState(produce(draft => { draft.isPosting = false; return draft; }));
+    }, [state.isPosting])
     
     function Save(){
-        setState({...state, isPosting: true})
-        if (state.isNew) {
-            PostContact(state.contact)
-                .then(() => {
-                    savedHook(`Contact "${state.contact.name}" saved`);
-                    setState({...state, isPosting: false});
-                })
-        }
-        else {
-            UpdateContact(state.contact.id, state.contact)
-                .then(() => {
-                    savedHook(`Contact "${state.contact.name}" updated`);
-                    setState({...state, isPosting: false});
-                });
-        }
+        setState({...state, isPosting: true})        
     }
     
-    return(<>
-            <DialogTitle>{state.isNew? "Create": "Edit"} contact</DialogTitle>
-            <DialogContext>
-                <Stack direction="column" space={2}>
+    return(<React.Fragment>
+        <Dialog open={!!(props.open && state.contact)}
+                fullscreen={props.fullScreen}
+                aria-labelledby={"dialog-title"}
+        >
+            <DialogTitle id={"dialog-title"}>
+                {state.isNew? "Create": "Edit"} contact
+            </DialogTitle>
+            <DialogContent>
+                <Stack direction={"column"} spacing={2} margin={2} >
                     <TextField required
-                               value={state.content.name}
+                               label={"Name"}
+                               value={state.contact.name}
                                onChange={(e) => input("name", e.target.value)}
                                {...getErrors("name")}
                     />
                     <TextField required
-                               value={state.content.jobTitle}
+                               label={"Job title"}
+                               value={state.contact.jobTitle}
                                onChange={(e) => input("jobTitle", e.target.value)}
                                {...getErrors("jobTitle")}
                     />
                     <TextField required
-                               value={state.content.mobilePhone}
+                               label={"Mobile phone"}
+                               value={state.contact.mobilePhone}
                                onChange={(e) => input("mobilePhone", e.target.value)}
                                InputProps={{ inputComponent: MobilePhoneMask }}
                                {...getErrors("mobilePhone")}
                     />
-                    <DateField required label={"Birth date"}
-                               defaultDate={dayjs()}
-                               value={state.contact.birthDate}
-                               onChange={(val) => input("birthDate", val)}
-                               {...getErrors("birthDate")}
-                    />           
+                    <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale={"en"} >
+                        <DateField required label={"Birth date"}
+                                   value={state.contact.birthDate}
+                                   onChange={(val) => input("birthDate", val)}
+                                   {...getErrors("birthDate")}
+                        />
+                    </LocalizationProvider>
                 </Stack>
-            </DialogContext>
+            </DialogContent>
             <DialogActions>
-                <Button disabled={state.isPosting} onClick={Save}>
+                <Button disabled={Object.keys(state.errors).length > 0 // true, if there are errors 
+                    || !Object.keys(state.contact).every(key => state.contact[key]) // true, if any of the field is empty
+                    || state.isPosting} 
+                        onClick={() => Save()}
+                >
                     {state.isNew? "Create" : "Update"}
                 </Button>
                 <Button onClick={props.backHook}>
                     Cancel
                 </Button>
             </DialogActions>
-        </>)
+        </Dialog>
+    </React.Fragment>)
 }
